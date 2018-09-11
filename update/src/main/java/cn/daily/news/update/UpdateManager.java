@@ -77,7 +77,8 @@ public class UpdateManager {
      * @param versionBean
      */
     private void checkData(AppCompatActivity activity, VersionBean versionBean) {
-        if (getVersionCode(activity) < versionBean.version_code) {
+
+        if (VersionCompareUtils.compareVersionName(getVersionName(activity), versionBean.version) == -1) {
             UpdateDialogFragment updateDialogFragment;
             if (versionBean.force_upgraded) {
                 updateDialogFragment = new ForceUpdateDialog();
@@ -153,6 +154,19 @@ public class UpdateManager {
             }
             context.startActivity(install);
         }
+    }
+
+    private String getVersionName(AppCompatActivity activity) {
+        String versionName = "5.0";
+        try {
+            PackageInfo packageInfo = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0);
+            if (packageInfo != null) {
+                versionName = packageInfo.versionName;
+            }
+        } catch (Exception e) {
+            Log.e("Update", "get version code error", e);
+        }
+        return versionName;
     }
 
     /**
