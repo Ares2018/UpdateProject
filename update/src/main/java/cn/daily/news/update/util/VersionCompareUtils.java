@@ -1,4 +1,4 @@
-package cn.daily.news.update;
+package cn.daily.news.update.util;
 
 public class VersionCompareUtils {
     /**

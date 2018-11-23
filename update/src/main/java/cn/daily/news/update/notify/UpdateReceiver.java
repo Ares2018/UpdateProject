@@ -13,13 +13,14 @@ import com.zjrb.core.utils.UIUtils;
 import cn.daily.news.update.Constants;
 import cn.daily.news.update.R;
 import cn.daily.news.update.UpdateManager;
+import cn.daily.news.update.util.DownloadManager;
 
 /**
  * Created by lixinke on 2017/10/23.
  */
 
 public class UpdateReceiver extends BroadcastReceiver {
-    private DownloadUtil mDownloadUtil;
+    private DownloadManager mDownloadUtil;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -38,7 +39,7 @@ public class UpdateReceiver extends BroadcastReceiver {
             String url = intent.getStringExtra(Constants.Key.APK_URL);
             String versionName = intent.getStringExtra(Constants.Key.APK_VERSION_NAME);
             int versionCode = intent.getIntExtra(Constants.Key.APK_VERSION_CODE, 0);
-            mDownloadUtil = DownloadUtil.get()
+            mDownloadUtil = DownloadManager.get()
                     .setDir(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath())
                     .setFileName(UIUtils.getString(R.string.app_name) + ".apk");
             new NotifyDownloadManager(context,mDownloadUtil, versionName, url, versionCode).startDownloadApk();

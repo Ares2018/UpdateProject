@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 
 import cn.daily.news.update.R;
 import cn.daily.news.update.UpdateManager;
+import cn.daily.news.update.listener.OnOperateListener;
 import cn.daily.news.update.type.UpdateType;
 
 
@@ -38,8 +39,10 @@ public class NonWiFiUpdateDialog extends UpdateDialogFragment {
     @Override
     public void updateApk(View view) {
         downloadApk();
-        if(UpdateManager.getInstance().getOnOperateListener()!=null){
-            UpdateManager.getInstance().getOnOperateListener().onOperate(UpdateType.NON_WIFI, R.id.update_ok);
+        if (UpdateManager.getInstance().getOnOperateListeners() != null && UpdateManager.getInstance().getOnOperateListeners().size() > 0) {
+            for (OnOperateListener listener : UpdateManager.getInstance().getOnOperateListeners()) {
+                listener.onOperate(UpdateType.NON_WIFI, R.id.update_ok);
+            }
         }
     }
 }

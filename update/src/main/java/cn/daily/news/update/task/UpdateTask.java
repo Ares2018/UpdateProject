@@ -6,6 +6,8 @@ import android.text.TextUtils;
 import com.zjrb.core.api.base.APIGetTask;
 import com.zjrb.core.api.callback.APICallBack;
 
+import java.util.List;
+
 import cn.daily.news.update.listener.OnUpdateListener;
 import cn.daily.news.update.UpdateManager;
 import cn.daily.news.update.UpdateResponse;
@@ -35,18 +37,20 @@ public class UpdateTask extends APIGetTask<UpdateResponse.DataBean> {
 
     private static class CheckUpdateCallBack extends APICallBack<UpdateResponse.DataBean> {
         private final AppCompatActivity mActivity;
-        private OnUpdateListener mListener;
+        private List<OnUpdateListener> mListeners;
 
         public CheckUpdateCallBack(AppCompatActivity activity) {
-            mListener = UpdateManager.getInstance().getOnUpdateListener();
+            mListeners = UpdateManager.getInstance().getOnUpdateListeners();
             mActivity = activity;
         }
 
         @Override
         public void onSuccess(UpdateResponse.DataBean data) {
             if (data == null || data.latest == null) {
-                if (mListener != null) {
-                    mListener.onError("服务端返回错误!", -1);
+                if (mListeners != null && mListeners.size() > 0) {
+                    for (OnUpdateListener listener : mListeners) {
+                        listener.onError("服务端返回错误!", -1);
+                    }
                 }
                 return;
             }
@@ -56,8 +60,10 @@ public class UpdateTask extends APIGetTask<UpdateResponse.DataBean> {
         @Override
         public void onError(String errMsg, int errCode) {
             super.onError(errMsg, errCode);
-            if (mListener != null) {
-                mListener.onError(errMsg, errCode);
+            if (mListeners != null && mListeners.size() > 0) {
+                for (OnUpdateListener listener : mListeners) {
+                    listener.onError("服务端返回错误!", -1);
+                }
             }
         }
     }

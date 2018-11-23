@@ -31,26 +31,25 @@ import com.zjrb.core.utils.UIUtils;
 import java.util.List;
 
 import cn.daily.news.update.Constants;
+import cn.daily.news.update.listener.OnOperateListener;
 import cn.daily.news.update.notify.NotifyDownloadManager;
 import cn.daily.news.update.R;
 import cn.daily.news.update.UpdateManager;
 import cn.daily.news.update.VersionBean;
 import cn.daily.news.update.type.UpdateType;
+import cn.daily.news.update.util.DownloadManager;
 
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class UpdateDialogFragment extends DialogFragment implements DownloadUtil.OnDownloadListener, IPermissionOperate, View.OnClickListener {
+public class UpdateDialogFragment extends DialogFragment implements IPermissionOperate, View.OnClickListener {
     private TextView mTitleView;
-    private TextView mRemarkView;
+    protected TextView mRemarkView;
     private View mCancelView;
-    private TextView mOkView;
-    private LoadingIndicatorDialog mProgressBar;
-
+    protected TextView mOkView;
     protected VersionBean mLatestBean;
-
-    private DownloadUtil mDownloadUtil;
+    private DownloadManager mDownloadManager;
 
 
     @Nullable
@@ -134,8 +133,10 @@ public class UpdateDialogFragment extends DialogFragment implements DownloadUtil
     public void updateApk(View view) {
         if (NetUtils.isWifi()) {
             downloadApk();
-            if (UpdateManager.getInstance().getOnOperateListener() != null) {
-                UpdateManager.getInstance().getOnOperateListener().onOperate(UpdateType.NORMAL, R.id.update_ok);
+            if (UpdateManager.getInstance().getOnOperateListeners() != null && UpdateManager.getInstance().getOnOperateListeners().size() > 0) {
+                for (OnOperateListener listener : UpdateManager.getInstance().getOnOperateListeners()) {
+                    listener.onOperate(UpdateType.NORMAL, R.id.update_ok);
+                }
             }
         } else {
             dismissAllowingStateLoss();
@@ -154,10 +155,11 @@ public class UpdateDialogFragment extends DialogFragment implements DownloadUtil
             @Override
             public void onGranted(boolean isAlreadyDef) {
                 dismissAllowingStateLoss();
-                if (mDownloadUtil == null) {
+                if (mDownloadManager == null) {
                     initDownload();
                 }
-                new NotifyDownloadManager(getContext(), mDownloadUtil, mLatestBean.version, mLatestBean.pkg_url, mLatestBean.version_code).startDownloadApk();
+                new NotifyDownloadManager(getContext(), mDownloadManager, mLatestBean.version, mLatestBean.pkg_url, mLatestBean.version_code)
+                        .startDownloadApk();
             }
 
             @Override
@@ -170,33 +172,20 @@ public class UpdateDialogFragment extends DialogFragment implements DownloadUtil
     }
 
     private void initDownload() {
-        mDownloadUtil = DownloadUtil.get()
+        mDownloadManager = DownloadManager.get()
                 .setDir(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath())
                 .setFileName(UIUtils.getString(R.string.app_name) + ".apk");
     }
 
-    protected void forceDownloadApk() {
-        String cachePath = UpdateManager.getInstance().getPreloadApk(UpdateManager.getInstance().getVersionCode(getContext()));
-        if (!TextUtils.isEmpty(cachePath)) {
-            mOkView.setText("安装");
-            UpdateManager.installApk(getContext(), cachePath);
-        } else {
-            mOkView.setText("更新");
-            mProgressBar = new LoadingIndicatorDialog(getActivity());
-            mProgressBar.setCancelable(false);
-            mProgressBar.show();
-            DownloadUtil.get().setListener(this).download(mLatestBean.pkg_url);
-        }
-    }
 
     public void cancelUpdate(View view) {
         dismissAllowingStateLoss();
         String cachePath = UpdateManager.getInstance().getPreloadApk(UpdateManager.getInstance().getVersionCode(getContext()));
         if (TextUtils.isEmpty(cachePath) && NetUtils.isWifi()) {
-            if (mDownloadUtil == null) {
+            if (mDownloadManager == null) {
                 initDownload();
             }
-            mDownloadUtil.setListener(new DownloadUtil.OnDownloadListener() {
+            mDownloadManager.setListener(new DownloadManager.OnDownloadListener() {
                 @Override
                 public void onLoading(int progress) {
                 }
@@ -217,41 +206,15 @@ public class UpdateDialogFragment extends DialogFragment implements DownloadUtil
                 }
             }).download(mLatestBean.pkg_url);
         }
-        if (UpdateManager.getInstance().getOnOperateListener() != null) {
-            UpdateManager.getInstance().getOnOperateListener().onOperate(UpdateType.NORMAL, R.id.update_cancel);
+
+
+        if (UpdateManager.getInstance().getOnOperateListeners() != null && UpdateManager.getInstance().getOnOperateListeners().size() > 0) {
+            for (OnOperateListener listener : UpdateManager.getInstance().getOnOperateListeners()) {
+                listener.onOperate(UpdateType.NORMAL, R.id.update_cancel);
+            }
         }
     }
 
-    @Override
-    public void onLoading(int progress) {
-
-    }
-
-    @Override
-    public void onSuccess(String path) {
-        UpdateManager.installApk(getContext(), path);
-        String cachePath = null;
-        try {
-            cachePath = Uri.parse(path).buildUpon().appendQueryParameter(Constants.Key.APK_VERSION_CODE, String.valueOf(mLatestBean.version_code)).toString();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        SettingManager.getInstance().setApkCachePath(cachePath);
-        mProgressBar.dismiss();
-        mOkView.setEnabled(true);
-        mOkView.setText("安装");
-    }
-
-    protected void installPreloadApk() {
-        UpdateManager.installApk(getContext(), UpdateManager.getInstance().getPreloadApk(UpdateManager.getInstance().getVersionCode(getContext())));
-    }
-
-    @Override
-    public void onFail(String err) {
-        mProgressBar.dismiss();
-        mRemarkView.setText("更新失败,请稍后再试");
-        mRemarkView.setVisibility(View.VISIBLE);
-    }
 
     @Override
     public void onDestroyView() {

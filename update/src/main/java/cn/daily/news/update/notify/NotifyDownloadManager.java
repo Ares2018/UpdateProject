@@ -15,6 +15,7 @@ import com.zjrb.core.utils.UIUtils;
 import cn.daily.news.update.Constants;
 import cn.daily.news.update.R;
 import cn.daily.news.update.UpdateManager;
+import cn.daily.news.update.util.DownloadManager;
 
 /**
  * Created by lixinke on 2017/12/28.
@@ -26,13 +27,13 @@ public class NotifyDownloadManager {
     private NotificationCompat.Builder mBuilder;
     private NotificationManager mNotificationManager;
     private long mUpdateTime;
-    private DownloadUtil mDownloadUtil;
+    private cn.daily.news.update.util.DownloadManager mDownloadUtil;
     private String mLastVersion;
     private String mLastVersionCode;
     private String mApkUrl;
     private Context mContext;
 
-    public NotifyDownloadManager(Context context, DownloadUtil downloadUtil, String version, String apkUrl, int versionCode) {
+    public NotifyDownloadManager(Context context, DownloadManager downloadUtil, String version, String apkUrl, int versionCode) {
         mContext = context;
         mDownloadUtil = downloadUtil;
         mLastVersion = version;
@@ -62,7 +63,7 @@ public class NotifyDownloadManager {
         mDownloadUtil.setListener(new MyOnDownloadListener()).download(mApkUrl);
     }
 
-    private class MyOnDownloadListener implements DownloadUtil.OnDownloadListener {
+    private class MyOnDownloadListener implements DownloadManager.OnDownloadListener {
         @Override
         public void onLoading(int progress) {
             if (System.currentTimeMillis() - mUpdateTime < UPDATE_DURATION_TIME) {

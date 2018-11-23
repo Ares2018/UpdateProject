@@ -1,5 +1,6 @@
 package cn.daily.news.update;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -16,6 +17,9 @@ import com.zjrb.core.common.manager.APICallManager;
 import com.zjrb.core.utils.SettingManager;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import cn.daily.news.update.listener.OnOperateListener;
 import cn.daily.news.update.listener.OnUpdateListener;
@@ -23,6 +27,7 @@ import cn.daily.news.update.task.UpdateTask;
 import cn.daily.news.update.ui.ForceUpdateDialog;
 import cn.daily.news.update.ui.PreloadUpdateDialog;
 import cn.daily.news.update.ui.UpdateDialogFragment;
+import cn.daily.news.update.util.VersionCompareUtils;
 
 /**
  * Created by lixinke on 2017/8/30.
@@ -33,10 +38,13 @@ public class UpdateManager {
     private static String MIME_APK = "application/vnd.android.package-archive";
 
     private static UpdateManager sInstance = new UpdateManager();
-    private OnUpdateListener mOnUpdateListener;
-    private OnOperateListener mOnOperateListener;
     private int mLayoutId = 0;
     private int mVersionCode = 0;
+    private List<OnUpdateListener> mOnUpdateListeners;
+
+
+
+    private List<OnOperateListener> mOnOperateListeners;
 
 
     public static UpdateManager getInstance() {
@@ -96,10 +104,13 @@ public class UpdateManager {
             updateDialogFragment.show(activity.getSupportFragmentManager(), "updateDialog");
         }
 
-        if (mOnUpdateListener != null) {
-            UpdateResponse.DataBean dataBean = new UpdateResponse.DataBean();
-            dataBean.latest = versionBean;
-            mOnUpdateListener.onUpdate(dataBean);
+
+        if (mOnUpdateListeners != null && mOnUpdateListeners.size() > 0) {
+            for (OnUpdateListener listener : mOnUpdateListeners) {
+                UpdateResponse.DataBean dataBean = new UpdateResponse.DataBean();
+                dataBean.latest = versionBean;
+                listener.onUpdate(dataBean);
+            }
         }
     }
 
@@ -194,20 +205,30 @@ public class UpdateManager {
     }
 
 
-    public synchronized OnUpdateListener getOnUpdateListener() {
-        return mOnUpdateListener;
+    public void addOnUpdateListener(OnUpdateListener listener) {
+        if (mOnUpdateListeners == null) {
+            mOnUpdateListeners = new ArrayList<>();
+        }
+        mOnUpdateListeners.add(listener);
     }
 
-    public synchronized OnOperateListener getOnOperateListener() {
-        return mOnOperateListener;
+    public void addOnOperateListener(OnOperateListener listener) {
+        if (mOnOperateListeners == null) {
+            mOnOperateListeners = new ArrayList<>();
+        }
+        mOnOperateListeners.add(listener);
     }
 
-    public synchronized void setOnUpdateListener(OnUpdateListener onUpdateListener) {
-        mOnUpdateListener = onUpdateListener;
+    public void removeOnUpdateListener(OnUpdateListener listener) {
+        if (mOnUpdateListeners != null && mOnUpdateListeners.size() > 0) {
+            mOnUpdateListeners.remove(listener);
+        }
     }
 
-    public synchronized void setOnOperateListener(OnOperateListener onOperateListener) {
-        mOnOperateListener = onOperateListener;
+    public void removeOnOperateListener(OnOperateListener listener) {
+        if (mOnOperateListeners != null && mOnOperateListeners.size() > 0) {
+            mOnOperateListeners.remove(listener);
+        }
     }
 
     public int getLayoutId() {
@@ -217,5 +238,13 @@ public class UpdateManager {
     public UpdateManager setLayoutId(int layoutId) {
         mLayoutId = layoutId;
         return this;
+    }
+
+    public List<OnUpdateListener> getOnUpdateListeners() {
+        return mOnUpdateListeners;
+    }
+
+    public List<OnOperateListener> getOnOperateListeners() {
+        return mOnOperateListeners;
     }
 }
